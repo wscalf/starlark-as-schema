@@ -19,6 +19,7 @@ require (
 	github.com/go-errors/errors v1.5.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/zerologr v1.2.3 // indirect
+	github.com/google/jsonschema-go v0.4.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3 // indirect
 	github.com/jzelinskie/stringz v0.0.3 // indirect
 	github.com/kr/text v0.2.0 // indirect

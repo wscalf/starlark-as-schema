@@ -53,6 +53,7 @@ func (l *Loader) VisitModule(thread *starlark.Thread, name string, visitor visit
 	for typeName, members := range globals {
 		visitor.BeginType(moduleName, typeName)
 		relations := []any{}
+		fields := []any{}
 
 		visitMember := func(typeName string, memberName string, memberData *starlarkstruct.Struct) error {
 			kind, err := get_string("kind", memberData)
@@ -66,6 +67,24 @@ func (l *Loader) VisitModule(thread *starlark.Thread, name string, visitor visit
 					return err
 				}
 				relations = append(relations, r)
+				return nil
+			case "field":
+				typeData, err := memberData.Attr("type")
+				if err != nil {
+					return fmt.Errorf("error accessing 'type' member of %+v: %w", typeData, err)
+				}
+
+				required, err := get_bool("required", memberData)
+				if err != nil {
+					return err
+				}
+
+				converted_type, err := visitDataType(visitor, typeData)
+				if err != nil {
+					return err
+				}
+
+				fields = append(fields, visitor.VisitDataField(memberName, required, converted_type))
 				return nil
 			default:
 				return fmt.Errorf("unmatched 'kind' value in member %s of type extension %s from namespace %s: %s", memberName, typeName, moduleName, string(kind))
@@ -99,7 +118,7 @@ func (l *Loader) VisitModule(thread *starlark.Thread, name string, visitor visit
 			}
 		}
 
-		visitor.VisitType(moduleName, typeName, relations, []any{})
+		visitor.VisitType(moduleName, typeName, relations, fields)
 	}
 
 	return nil
@@ -118,6 +137,87 @@ func visitRelation(visitor visitors.SchemaVisitor, relationName string, memberDa
 	}
 
 	return visitor.VisitRelation(relationName, body), nil
+}
+
+func visitDataType(visitor visitors.SchemaVisitor, v starlark.Value) (any, error) {
+	typeData, ok := v.(*starlarkstruct.Struct)
+	if !ok {
+		return nil, fmt.Errorf("error converting input of type %s to a starlark struct", v.Type())
+	}
+
+	kind, err := get_string("kind", typeData)
+	if err != nil {
+		return nil, err
+	}
+
+	switch kind {
+	case "or": //Type union
+		leftData, err := typeData.Attr("left")
+		if err != nil {
+			return nil, err
+		}
+		left, err := visitDataType(visitor, leftData)
+
+		rightData, err := typeData.Attr("right")
+		if err != nil {
+			return nil, err
+		}
+		right, err := visitDataType(visitor, rightData)
+
+		return visitor.VisitCompositeDataType([]any{left, right}), nil
+	case "uuid":
+		return visitor.VisitUUIDDataType(), nil
+	case "numeric_id":
+		min, err := get_optional_number("min", typeData)
+		if err != nil {
+			return nil, err
+		}
+
+		max, err := get_optional_number("max", typeData)
+		if err != nil {
+			return nil, err
+		}
+
+		return visitor.VisitNumericIDDataType(min, max), nil
+	case "text":
+		minLength, err := get_optional_number("minLength", typeData)
+		if err != nil {
+			return nil, err
+		}
+
+		maxLength, err := get_optional_number("maxLength", typeData)
+		if err != nil {
+			return nil, err
+		}
+
+		regex, err := get_optional_string("regex", typeData)
+		if err != nil {
+			return nil, err
+		}
+
+		return visitor.VisitTextDataType(minLength, maxLength, regex), nil
+	default:
+		return nil, fmt.Errorf("unmatched data type kind: %s", kind)
+	}
+}
+
+func get_optional_number(name string, structure *starlarkstruct.Struct) (*int, error) {
+	v, err := structure.Attr(name)
+	if err != nil {
+		return nil, fmt.Errorf("error accessing member %s of struct %+v: %w", name, structure, err)
+	}
+
+	if _, ok := v.(starlark.NoneType); ok {
+		return nil, nil
+	}
+
+	if i, ok := v.(starlark.Int); ok {
+		n, _ := i.Int64()
+		r := int(n)
+		return &r, nil
+	} else {
+		return nil, fmt.Errorf("unable to convert Starlark value of type %s to int", v.Type())
+	}
 }
 
 func visitRelationBody(visitor visitors.SchemaVisitor, v starlark.Value) (any, error) {
@@ -181,7 +281,17 @@ func visitRelationBody(visitor visitors.SchemaVisitor, v starlark.Value) (any, e
 			return nil, err
 		}
 
-		return visitor.VisitAssignableExpression(ns, tn, cardinality, nil), nil
+		typeData, err := bodyData.Attr("data_type")
+		if err != nil {
+			return nil, err
+		}
+
+		data_type, err := visitDataType(visitor, typeData)
+		if err != nil {
+			return nil, err
+		}
+
+		return visitor.VisitAssignableExpression(ns, tn, cardinality, data_type), nil
 	default:
 		return nil, fmt.Errorf("unmatched relation expression kind: %s", kind)
 	}
@@ -196,11 +306,41 @@ func get_string(name string, structure *starlarkstruct.Struct) (string, error) {
 	return convert_to_string(v)
 }
 
+func get_optional_string(name string, structure *starlarkstruct.Struct) (*string, error) {
+	v, err := structure.Attr(name)
+	if err != nil {
+		return nil, fmt.Errorf("error accessing member %s of struct %+v: %w", name, structure, err)
+	}
+
+	if _, ok := v.(starlark.NoneType); ok {
+		return nil, nil
+	}
+
+	s, err := convert_to_string(v)
+	if err != nil {
+		return nil, err
+	}
+
+	return &s, nil
+}
+
 func convert_to_string(v starlark.Value) (string, error) {
 	if s, ok := v.(starlark.String); ok {
 		return string(s), nil
 	} else {
 		return "", fmt.Errorf("unable to convert Starlark value of type %s to string", v.Type())
+	}
+}
+func get_bool(name string, structure *starlarkstruct.Struct) (bool, error) {
+	v, err := structure.Attr(name)
+	if err != nil {
+		return false, fmt.Errorf("error access member %s of struct %+v: %w", name, structure, err)
+	}
+
+	if b, ok := v.(starlark.Bool); ok {
+		return bool(b), nil
+	} else {
+		return false, fmt.Errorf("unable to convert Starlark value of type %s to bool", v.Type())
 	}
 }
 

@@ -24,8 +24,20 @@ def ref(name):
 def subref(name, subname):
     return struct(kind = "subref", name = name, subname = subname)
 
-def assignable(namespace, type, cardinality):
-    return struct(kind = "assignable", namespace = namespace, type = type, cardinality = cardinality)
+def assignable(namespace, type, cardinality, data_type):
+    return struct(kind = "assignable", namespace = namespace, type = type, cardinality = cardinality, data_type=data_type)
     
-def field():
-    return struct(kind = "field")
+def field(type, required=False):
+    return struct(kind = "field", required = required, type = type)
+
+def text(minLength=None, maxLength=None, regex=None):
+    return struct(kind="text", minLength=minLength, maxLength=maxLength, regex=regex)
+
+def numeric_id(min=None, max=None):
+    return struct(kind="numeric_id", min=min, max=max)
+
+def uuid():
+    return struct(kind="uuid")
+    
+def all(namespace, name):
+    return text(regex="{}/{}:\\*".format(namespace, name))

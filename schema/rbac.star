@@ -1,19 +1,19 @@
-load("kessel.star", "relation", "assignable", "cardinality", "union", "intersect", "subref", "ref")
+load("kessel.star", "relation", "assignable", "cardinality", "union", "intersect", "subref", "ref", "all", "uuid")
 
 principal = {}
 
 role = {
-    "any_any_any": relation(assignable("rbac", "principal", cardinality.All))
+    "any_any_any": relation(assignable("rbac", "principal", cardinality.All, all("rbac", "principal")))
 }
 
 role_binding = {
-    "granted": relation(assignable("rbac", "role", cardinality.Any)),
-    "subject": relation(assignable("rbac", "principal", cardinality.Any))
+    "granted": relation(assignable("rbac", "role", cardinality.Any, uuid())),
+    "subject": relation(assignable("rbac", "principal", cardinality.Any, uuid()))
 }
 
 workspace = {
-    "binding": relation(assignable("rbac", "role_binding", cardinality.Any)),
-    "parent": relation(assignable("rbac", "workspace", cardinality.ExactlyOne))
+    "binding": relation(assignable("rbac", "role_binding", cardinality.Any, uuid())),
+    "parent": relation(assignable("rbac", "workspace", cardinality.ExactlyOne, uuid()))
 }
 
 def v1_based_permission(application, resource, verb, v2_perm):
@@ -35,5 +35,5 @@ def v1_based_permission(application, resource, verb, v2_perm):
     return v2_perm
 
 def _add_v1_role_permission(name):
-    add_member("rbac", "role", name, relation(assignable("rbac", "principal", cardinality.All)))
+    add_member("rbac", "role", name, relation(assignable("rbac", "principal", cardinality.All, all("rbac", "principal"))))
     return name

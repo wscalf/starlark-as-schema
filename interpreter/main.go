@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"example.com/interpreter/scripting"
@@ -56,6 +57,20 @@ func main() {
 	}
 	fmt.Println("SpiceDB Schema:")
 	fmt.Println(schema)
+
+	fmt.Println("JSON Schemas per Type:")
+	jsonSchemaVisitor := visitors.NewJSONSchemaVisitor()
+	err = visitModules(jsonSchemaVisitor)
+	for name, schema := range jsonSchemaVisitor.Schemas {
+		data, err := json.MarshalIndent(schema, "", "  ")
+		if err != nil {
+			fmt.Println("error marshaling schema for type", name)
+			continue
+		}
+
+		fmt.Println(name, ":")
+		fmt.Println(string(data))
+	}
 }
 
 func printAll(globals starlark.StringDict) {
