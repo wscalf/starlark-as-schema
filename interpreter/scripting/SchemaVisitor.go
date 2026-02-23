@@ -1,4 +1,4 @@
-package visitors
+package scripting
 
 type SchemaVisitor interface {
 	VisitAnd(left any, right any) any

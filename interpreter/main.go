@@ -32,23 +32,20 @@ func main() {
 		printAll(globals)
 	}
 
-	visitModules := func(visitor visitors.SchemaVisitor) error {
-		for _, name := range moduleNames {
-			err := loader.VisitModule(thread, name, visitor)
-			if err != nil {
-				return fmt.Errorf("error visiting module %s: %w", name, err)
-			}
-		}
+	namespaces, err := loader.BuildIntermediate(thread)
+	if err != nil {
+		fmt.Println("Error building intermediate model: ", err)
+		return
+	}
 
-		return nil
+	visitModules := func(visitor scripting.SchemaVisitor) {
+		for _, namespace := range namespaces {
+			namespace.Visit(visitor)
+		}
 	}
 
 	spiceDbVisitor := visitors.NewSpiceDBSchemaGeneratingVisitor()
-	err = visitModules(spiceDbVisitor)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	visitModules(spiceDbVisitor)
 
 	schema, err := spiceDbVisitor.Generate()
 	if err != nil {
@@ -60,7 +57,7 @@ func main() {
 
 	fmt.Println("JSON Schemas per Type:")
 	jsonSchemaVisitor := visitors.NewJSONSchemaVisitor()
-	err = visitModules(jsonSchemaVisitor)
+	visitModules(jsonSchemaVisitor)
 	for name, schema := range jsonSchemaVisitor.Schemas {
 		data, err := json.MarshalIndent(schema, "", "  ")
 		if err != nil {
