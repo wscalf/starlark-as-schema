@@ -1,3 +1,4 @@
+# The kessel module provides a library of functions for other modules to call
 cardinality = struct(
     Any = "Any",
     AtMostOne = "AtMostOne",

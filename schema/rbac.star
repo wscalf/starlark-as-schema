@@ -1,5 +1,7 @@
 load("kessel.star", "relation", "assignable", "cardinality", "union", "intersect", "subref", "ref", "all", "uuid")
 
+# Everything in this file has reporter = rbac
+
 principal = {}
 
 role = {
@@ -24,6 +26,8 @@ def v1_based_permission(application, resource, verb, v2_perm):
     v1_perm = _add_v1_role_permission("{}_{}_{}".format(application, resource, verb))
 
 
+    # add_member is a native method provided by the interpreter that adds the given relation to the type by name
+    # this is necessary because starlark heap memory is frozen after load, so code in a module isn't allowed to modify the contents of that module when called by others
     add_member("rbac", "role", v2_perm, relation(union(ref("any_any_any"), union(ref(app_admin), union(ref(any_verb), union(ref(any_resource), ref(v1_perm)))))))
 
     # Role binding permission
