@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "granted": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "subject": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    }
+  }
+}

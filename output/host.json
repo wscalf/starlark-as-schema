@@ -1,0 +1,36 @@
+{
+  "type": "object",
+  "properties": {
+    "ansible_host": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "insights_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "satellite_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "string",
+          "pattern": "^\\d{10}$"
+        }
+      ]
+    },
+    "subscription_manager_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "workspace": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "workspace"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "properties": {
+    "any_any_any": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "inventory_any_any": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "inventory_any_read": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "inventory_any_write": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "inventory_host_any": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "inventory_host_read": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "inventory_host_write": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    }
+  }
+}

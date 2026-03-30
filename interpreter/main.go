@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"example.com/interpreter/scripting"
 	"example.com/interpreter/visitors"
@@ -70,6 +71,8 @@ func main() {
 
 		fmt.Println(name, ":")
 		fmt.Println(string(data))
+
+		os.WriteFile("output/"+name+".json", data, 0644)
 	}
 }
 

@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "binding": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "parent": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "parent"
+  ]
+}
