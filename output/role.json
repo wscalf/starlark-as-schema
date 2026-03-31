@@ -33,6 +33,10 @@
       "type": "string",
       "pattern": "rbac/principal:\\*"
     },
+    "remediations_any_delete": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
     "remediations_any_read": {
       "type": "string",
       "pattern": "rbac/principal:\\*"
@@ -45,11 +49,39 @@
       "type": "string",
       "pattern": "rbac/principal:\\*"
     },
+    "remediations_remediations_delete": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
     "remediations_remediations_read": {
       "type": "string",
       "pattern": "rbac/principal:\\*"
     },
     "remediations_remediations_write": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "tasks_any_any": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "tasks_any_read": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "tasks_any_write": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "tasks_tasks_any": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "tasks_tasks_read": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "tasks_tasks_write": {
       "type": "string",
       "pattern": "rbac/principal:\\*"
     }
