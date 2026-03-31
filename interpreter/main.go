@@ -74,6 +74,15 @@ func main() {
 
 		os.WriteFile("output/"+name+".json", data, 0644)
 	}
+
+	fmt.Println("Schema metadata:")
+	loader.VisitMetadata(func(ns string, meta map[string]starlark.Value) error {
+		fmt.Printf("%s:\n", ns)
+		for k, v := range meta {
+			fmt.Printf("%s: %s\n", k, v.String())
+		}
+		return nil
+	})
 }
 
 func printAll(globals starlark.StringDict) {

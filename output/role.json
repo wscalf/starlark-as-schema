@@ -28,6 +28,30 @@
     "inventory_host_write": {
       "type": "string",
       "pattern": "rbac/principal:\\*"
+    },
+    "remediations_any_any": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "remediations_any_read": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "remediations_any_write": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "remediations_remediations_any": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "remediations_remediations_read": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
+    },
+    "remediations_remediations_write": {
+      "type": "string",
+      "pattern": "rbac/principal:\\*"
     }
   }
 }

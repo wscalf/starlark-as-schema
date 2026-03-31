@@ -41,6 +41,16 @@ func (l *Loader) Load(thread *starlark.Thread, name string) (starlark.StringDict
 	return globals, nil
 }
 
+func (l *Loader) VisitMetadata(visitor func(string, map[string]starlark.Value) error) error {
+	for name, ns := range l.extensions.namespaces {
+		if err := visitor(name, ns.Metadata); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (l *Loader) VisitModule(thread *starlark.Thread, name string, visitor visitors.SchemaVisitor) error {
 	globals, err := l.Load(thread, name)
 	if err != nil {
@@ -92,7 +102,7 @@ func (l *Loader) VisitModule(thread *starlark.Thread, name string, visitor visit
 		}
 
 		if moduleTypeExtentsFound {
-			if typeExtent, ok := moduleTypeExtents[typeName]; ok {
+			if typeExtent, ok := moduleTypeExtents.Overlay[typeName]; ok {
 				for memberName, member := range typeExtent {
 					memberData := member.(*starlarkstruct.Struct)
 
@@ -331,6 +341,15 @@ func convert_to_string(v starlark.Value) (string, error) {
 		return "", fmt.Errorf("unable to convert Starlark value of type %s to string", v.Type())
 	}
 }
+
+func convert_to_callable(v starlark.Value) (starlark.Callable, error) {
+	if c, ok := v.(starlark.Callable); ok {
+		return c, nil
+	} else {
+		return nil, fmt.Errorf("unable to convert Starlark value of type %s to Callable", v.Type())
+	}
+}
+
 func get_bool(name string, structure *starlarkstruct.Struct) (bool, error) {
 	v, err := structure.Attr(name)
 	if err != nil {
@@ -383,25 +402,126 @@ func (l *Loader) RegisterBuiltin(name string, callback func(thread *starlark.Thr
 
 func (l *Loader) registerDefaultBuiltins() {
 	l.RegisterBuiltin("struct", starlarkstruct.Make)
+
 	l.RegisterBuiltin("add_member", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		ns, err := convert_to_string(args.Index(0))
 		if err != nil {
-			return nil, err
+			return starlark.None, err
 		}
 
 		t, err := convert_to_string(args.Index(1))
 		if err != nil {
-			return nil, err
+			return starlark.None, err
 		}
 
 		r, err := convert_to_string(args.Index(2))
 		if err != nil {
-			return nil, err
+			return starlark.None, err
 		}
 
 		b := args.Index(3)
 
 		l.extensions.AddMember(ns, t, r, b)
+
+		return starlark.None, nil
+	})
+
+	l.RegisterBuiltin("has_member", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+		ns, err := convert_to_string(args.Index(0))
+		if err != nil {
+			return starlark.None, err
+		}
+
+		t, err := convert_to_string(args.Index(1))
+		if err != nil {
+			return starlark.None, err
+		}
+
+		r, err := convert_to_string(args.Index(2))
+		if err != nil {
+			return starlark.None, err
+		}
+
+		if namespace, ok := l.extensions.namespaces[ns]; ok {
+			if _type, ok := namespace.Overlay[t]; ok {
+				if _, ok := _type[r]; ok {
+					return starlark.True, nil
+				}
+			}
+		}
+
+		return starlark.False, nil
+	})
+
+	l.RegisterBuiltin("replace_member", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+		ns, err := convert_to_string(args.Index(0))
+		if err != nil {
+			return starlark.None, err
+		}
+
+		t, err := convert_to_string(args.Index(1))
+		if err != nil {
+			return starlark.None, err
+		}
+
+		r, err := convert_to_string(args.Index(2))
+		if err != nil {
+			return starlark.None, err
+		}
+
+		mutator, err := convert_to_callable(args.Index(3))
+		if err != nil {
+			return nil, err
+		}
+
+		var relation *starlarkstruct.Struct
+		if namespace, ok := l.extensions.namespaces[ns]; ok {
+			if _type, ok := namespace.Overlay[t]; ok {
+				if r, ok := _type[r]; ok {
+					relation = r.(*starlarkstruct.Struct)
+				} else {
+					return starlark.None, fmt.Errorf("relation %s does not exist on type %s in module %s", r, t, ns)
+				}
+			}
+		}
+
+		body, err := relation.Attr("body")
+		if err != nil {
+			return starlark.None, err
+		}
+
+		updated_body, err := starlark.Call(thread, mutator, starlark.Tuple{body}, []starlark.Tuple{})
+		if err != nil {
+			return starlark.None, err
+		}
+
+		updated, err := starlarkstruct.Make(nil, nil, starlark.Tuple{}, []starlark.Tuple{
+			{starlark.String("kind"), starlark.String("relation")},
+			{starlark.String("body"), updated_body},
+		})
+
+		if err != nil {
+			return starlark.None, err
+		}
+
+		l.extensions.namespaces[ns].Overlay[t][r] = updated
+		return starlark.None, nil
+	})
+
+	l.RegisterBuiltin("add_metadata", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+		ns, err := convert_to_string(args.Index(0))
+		if err != nil {
+			return starlark.None, err
+		}
+
+		key, err := convert_to_string(args.Index(1))
+		if err != nil {
+			return starlark.None, err
+		}
+
+		value := args.Index(2)
+
+		l.extensions.AddMetadata(ns, key, value)
 
 		return starlark.None, nil
 	})
